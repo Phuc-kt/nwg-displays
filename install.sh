@@ -1,10 +1,53 @@
 #!/usr/bin/env bash
 
-# Before running this script, make sure you have python-build, python-installer,
-# python-wheel and python-setuptools installed.
+# nwg-displays installation script
+# Supports: Arch Linux, Debian/Ubuntu, Fedora, openSUSE
 
 PROGRAM_NAME="nwg-displays"
 MODULE_NAME="nwg_displays"
+
+# Detect distribution and install dependencies
+install_dependencies() {
+    echo "Detecting Linux distribution..."
+    
+    if [ -f /etc/arch-release ]; then
+        echo "Arch Linux detected"
+        sudo pacman -S --noconfirm python-build python-installer python-setuptools python-wheel
+    elif [ -f /etc/debian_version ]; then
+        echo "Debian/Ubuntu detected"
+        sudo apt update
+        sudo apt install -y python3-build python3-installer python3-setuptools python3-wheel
+    elif [ -f /etc/fedora-release ]; then
+        echo "Fedora detected"
+        sudo dnf install -y python3-build python3-installer python3-setuptools python3-wheel
+    elif [ -f /etc/os-release ]; then
+        . /etc/os-release
+        if [[ "$ID" == "opensuse-leap" ]] || [[ "$ID" == "opensuse-tumbleweed" ]]; then
+            echo "openSUSE detected"
+            sudo zypper install -y python3-build python3-installer python3-setuptools python3-wheel
+        else
+            echo "Unknown distribution: $ID"
+            echo "Please install dependencies manually:"
+            echo "  - python-build"
+            echo "  - python-installer"
+            echo "  - python-setuptools"
+            echo "  - python-wheel"
+            exit 1
+        fi
+    else
+        echo "Could not detect Linux distribution"
+        echo "Please install dependencies manually:"
+        echo "  - python-build"
+        echo "  - python-installer"
+        echo "  - python-setuptools"
+        echo "  - python-wheel"
+        exit 1
+    fi
+}
+
+# Install dependencies first
+install_dependencies
+
 SITE_PACKAGES="$(python3 -c "import sysconfig; print(sysconfig.get_paths()['purelib'])")"
 PATTERN="$SITE_PACKAGES/$MODULE_NAME*"
 
@@ -28,12 +71,20 @@ for filename in "${filenames[@]}"; do
   fi
 done
 
-python -m build --wheel --no-isolation
+echo "Building package..."
+python3 -m build --wheel --no-isolation
 
-python -m installer dist/*.whl
+echo "Installing package..."
+python3 -m installer dist/*.whl
 
+echo "Installing desktop file and icons..."
 install -Dm 644 -t "/usr/share/applications" "$PROGRAM_NAME.desktop"
 install -Dm 644 -t "/usr/share/pixmaps" "$PROGRAM_NAME.svg"
 
+echo "Installing documentation..."
 install -Dm 644 -t "/usr/share/licenses/$PROGRAM_NAME" LICENSE
 install -Dm 644 -t "/usr/share/doc/$PROGRAM_NAME" README.md
+
+echo ""
+echo "Installation complete!"
+echo "You can now run: nwg-displays"
