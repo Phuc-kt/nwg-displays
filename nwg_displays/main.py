@@ -1047,6 +1047,14 @@ def restore_old_settings(btn, backup, path):
         # Let's give it some time to do it before refreshing UI.
         GLib.timeout_add(2000, create_display_buttons)
 
+    elif os.getenv("NIRI_SOCKET"):
+        save_list_to_text_file(backup, path)
+        confirm_win.close()
+        # Reload niri configuration
+        niri_msg('{"Action":{"ReloadConfig":{}}}')
+        # Give niri time to reload before refreshing UI
+        GLib.timeout_add(2000, create_display_buttons)
+
 
 def main():
     GLib.set_prgname("nwg-displays")
@@ -1413,7 +1421,7 @@ def main():
     global form_apply
     form_apply = builder.get_object("apply")
     form_apply.set_label(voc["apply"])
-    if (sway and sway_config_dir) or (hypr and hypr_config_dir):
+    if (sway and sway_config_dir) or (hypr and hypr_config_dir) or (niri and niri_config_dir):
         form_apply.connect("clicked", on_apply_button, profile_manager)
     else:
         form_apply.set_sensitive(False)

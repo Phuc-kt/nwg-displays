@@ -201,6 +201,7 @@ class SettingsApplier:
             SettingsApplier._save_current_state_to_previous_profile(config_dir)
 
         if os.getenv("NIRI_SOCKET"):
+            print(f"[DEBUG] Applying niri config to {outputs_path}")
             SettingsApplier._apply_niri_gui(
                 display_buttons,
                 outputs_activity,
@@ -232,6 +233,8 @@ class SettingsApplier:
                 config_dir,
                 profile_name,
             )
+        else:
+            print("[Error] No compositor detected (Sway/Hyprland/Niri)")
 
         if config_dir and profile_name:
             SettingsApplier._set_active_profile(config_dir, profile_name)
