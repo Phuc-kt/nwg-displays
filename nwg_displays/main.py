@@ -14,6 +14,7 @@ Thank you, Kurt Jacobson!
 """
 
 import argparse
+import shutil
 import stat
 import sys
 import threading
@@ -989,6 +990,10 @@ def keep_current_settings(btn, config_dir=None, profile_name=None):
         GLib.Source.remove(src_tag)
     confirm_win.close()
 
+    if os.getenv("NIRI_SOCKET"):
+        niri_reload_config()
+        GLib.timeout_add(2000, create_display_buttons)
+
     if config_dir and profile_name:
         if config.get("profile-bound-wallpapers", True):
             threading.Thread(
@@ -1034,11 +1039,12 @@ def restore_old_settings(btn, backup, path):
         GLib.timeout_add(2000, create_display_buttons)
 
     elif os.getenv("NIRI_SOCKET"):
-        save_list_to_text_file(backup, path)
+        # For niri: backup is a file path (.bak), restore by copying it back
+        if backup and os.path.isfile(backup):
+            shutil.copy2(backup, path)
+            print(f"[niri] Restored from {backup}")
         confirm_win.close()
-        # Reload niri configuration
-        niri_msg('{"Action":{"ReloadConfig":{}}}')
-        # Give niri time to reload before refreshing UI
+        niri_reload_config()
         GLib.timeout_add(2000, create_display_buttons)
 
 
@@ -1125,6 +1131,8 @@ def main():
 
     load_vocabulary()
 
+    global outputs_path
+    global workspaces_path
     if sway:
         if os.path.isdir(sway_config_dir):
             outputs_path = args.outputs_path
